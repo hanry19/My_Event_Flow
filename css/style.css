@@ -1,0 +1,46 @@
+
+:root {
+    font-size: 14px;
+}
+
+html, body{
+    height: 100%;
+    overflow: hidden;
+}
+#container, #main, #svg-wrap{
+    height: inherit;
+}
+svg {
+    width: 100%;
+    height: inherit;
+    background-size: 2rem 2rem;
+    background-image: radial-gradient(black, #000000 1.5px, rgba(0, 0, 0, 0) 1px);
+}
+
+
+textarea {
+    text-align: center;
+    border: none;
+    background-color: transparent;
+    outline: none;
+}
+
+.editTextWrap {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-content: center;
+    width: inherit;
+    height: inherit;
+}
+.editTextWrap .editText {
+    resize : none;
+    text-align: center;
+    vertical-align: middle;
+    width: inherit;
+    height: 1.5rem;
+    padding: 0;
+    margin: 0;
+    border: none;
+    background-color: transparent;
+}
