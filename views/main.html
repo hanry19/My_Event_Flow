@@ -21,7 +21,7 @@
             <input id="addEvent" autofocus type="text" placeholder="이벤트 추가">
         </div>
         <div id="svg-wrap">
-            <svg id="draw-space" width="100%" , height="100%">
+            <svg id="draw-space" width="100%" height="100%">
                 <polyline points="220,50  240,50" style="fill:none;stroke:red;stroke-width:4"></polyline>
             </svg>
         </div>
@@ -31,21 +31,23 @@
 <script src="../js/linkedList.js"></script>
 
 <script>
+
     class dataModel {
-        constructor(editMode = false) {
+        constructor(editMode = false, selectedId) {
             this.editMode = editMode;
+            this.selectedId = selectedId
         }
 
         getAllModel() {
             return {
                 editMode: this.editMode,
+                selectedId: this.selectedId,
             }
         }
 
         getModel(name) {
             return this[name];
         }
-
 
         setModel(name, value) {
             this[name] = value;
@@ -54,25 +56,15 @@
 
 </script>
 <script>
+
     const model = new dataModel();
-
-
-    const svg = d3.select('svg')
-        .on('click', e => {
-            if (model.getModel('editMode')) {
-                console.log("Edit Mode End")
-            }
-
-
-        });
-
     const link = new LinkedList();
 
     const inputBox = document.getElementById('addEvent');
+
     inputBox.addEventListener('keypress', (e) => {
         const inputText = e.target.value;
         if (e.key === 'Enter' && inputText !== '') {
-            const inputText = e.target.value;
             addList(inputText);
             inputBox.value = '';
         }
@@ -80,47 +72,45 @@
 </script>
 
 <script>
+
+    function handlerZoom () {
+        console.log("handlerZoom")
+        console.log(d3.event)
+        d3.selectAll('g')
+            .attr('transform', d3.event.transform)
+    }
+
+    d3.select('svg')
+        .call(d3.zoom()
+            .on("zoom",handlerZoom)
+        ).on("dblclick.zoom", endOfEditMode);
+
+
+    function endOfEditMode() {
+        console.log("asdasd", d3.event)
+        if (model.getModel('editMode')) {
+        const groupId = model.getModel('selectedId');
+            const target = d3.select('textarea')?.node();
+            const editedText = target?.value;
+
+            // 요소 삭제
+            d3.select(`#${groupId} foreignObject`).remove();
+
+            // text 요소 다시 두둥 등장
+            d3.select(`#${groupId} text`)
+                .attr('visibility', '')
+                .text(editedText);
+        }
+    }
+
+
     function addList(text) {
+
         const lastLink = [...link.printListData()];
         const index = lastLink.length;
         const obj = lastLink[0]
             ? {id: `item_${index}`, x: 30 + lastLink[0]?.x + lastLink[0]?.width, y: 20, width: 100, height: 70, text}
             : {id: `item_${index}`, x: 30, y: 20, width: 100, height: 70, text};
-
-
-        function domList(dom) {
-            const parentNode = dom.parentNode;
-            const brotherNode = parentNode.childNodes[1];
-            return [dom, parentNode, brotherNode];
-        }
-
-        function start(dom) {
-            const moveTarget = domList(dom);
-            moveTarget.forEach(tag => d3.select(tag).raise().classed("active", true));
-        }
-
-
-        function drag(dom) {
-            const moveTarget = domList(dom);
-
-            const tagName = tag => tag.tagName === 'text';
-
-            const isNotText = tag => d3.select(tag)
-                .attr('x', data => data.x = d3.event.x)
-                .attr('y', data => data.y = d3.event.y);
-
-            const isText = tag => d3.select(tag)
-                .attr('x', data => data.x + (data.width / 2))
-                .attr('y', data => data.y + (data.height / 2));
-
-            moveTarget.forEach(tag => tagName(tag) ? isText(tag) : isNotText(tag));
-
-        }
-
-        function end(dom) {
-            const moveTarget = domList(dom);
-            moveTarget.forEach(tag => d3.select(tag).classed("active", false));
-        }
 
         const svg = d3.select('#draw-space')
             .append('g')
@@ -138,15 +128,9 @@
             .attr('width', d => d.width)
             .attr('height', d => d.height)
             .call(d3.drag()
-                .on("start", function () {
-                    start(this)
-                })
-                .on("drag", function () {
-                    drag(this)
-                })
-                .on("end", function () {
-                    end(this)
-                })
+                .on("start", function () {start(this)})
+                .on("drag", function () {drag(this)})
+                .on("end", function () {end(this)})
             );
 
         svg.append('text')
@@ -158,10 +142,50 @@
             .attr('fill', "black")
             .text(d => d.text)
             .on('dblclick', function () {
+                console.log("???")
                 doubleClickEvent(this);
             })
 
+
+        link.insertFirst(obj);
+
+
+        function domList(dom) {
+            const parentNode = dom.parentNode;
+            const brotherNode = parentNode.childNodes[1];
+            return [dom, parentNode, brotherNode];
+        }
+
+        function start(dom) {
+            const moveTarget = domList(dom);
+            moveTarget.forEach(tag => d3.select(tag).raise().classed("active", true));
+        }
+
+        function drag(dom) {
+            const moveTarget = domList(dom);
+            const tagName = tag => tag.tagName === 'text';
+
+            const isNotText = tag => d3.select(tag)
+                .attr('x', data => data.x = d3.event.x)
+                .attr('y', data => data.y = d3.event.y);
+
+            const isText = tag => d3.select(tag)
+                .attr('x', data => data.x + (data.width / 2))
+                .attr('y', data => data.y + (data.height / 2));
+
+            moveTarget.forEach(tag => tagName(tag) ? isText(tag) : isNotText(tag));
+        }
+
+        function end(dom) {
+            const moveTarget = domList(dom);
+            moveTarget.forEach(tag => d3.select(tag).classed("active", false));
+        }
+
         function doubleClickEvent(dom) {
+
+            model.setModel('editMode', true);
+            model.setModel('selectedId', obj.id);
+
             d3.select(dom).attr('visibility', 'hidden');
 
             const foreignObject = d3.select(dom.parentNode)
@@ -185,13 +209,9 @@
                     }
                 })
                 .node()
-                .focus()
-            ;
-
-
+                .focus();
         }
 
-        link.insertFirst(obj);
     }
 
 
