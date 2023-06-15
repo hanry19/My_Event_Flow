@@ -8,7 +8,6 @@
     <!-- d3 library -->
     <script src="http://d3js.org/d3.v5.min.js"></script>
 
-
 </head>
 <body>
 <div id="container">
@@ -29,33 +28,12 @@
 </div>
 </body>
 <script src="../js/linkedList.js"></script>
+<script src="../js/datModel.js"></script>
 
-<script>
 
-    class dataModel {
-        constructor(editMode = false, selectedId) {
-            this.editMode = editMode;
-            this.selectedId = selectedId
-        }
+<script type="module">
+    import * as _addList from '../module/addList.js';
 
-        getAllModel() {
-            return {
-                editMode: this.editMode,
-                selectedId: this.selectedId,
-            }
-        }
-
-        getModel(name) {
-            return this[name];
-        }
-
-        setModel(name, value) {
-            this[name] = value;
-        }
-    }
-
-</script>
-<script>
 
     const model = new dataModel();
     const link = new LinkedList();
@@ -69,38 +47,46 @@
             inputBox.value = '';
         }
     });
-</script>
 
-<script>
 
-    function handlerZoom () {
-        console.log("handlerZoom")
-        console.log(d3.event)
-        d3.selectAll('g')
-            .attr('transform', d3.event.transform)
+    function handlerZoom(d) {
+        model.setModel('translate', d3.event.transform);
+        applyTranslateAll();
     }
 
     d3.select('svg')
         .call(d3.zoom()
-            .on("zoom",handlerZoom)
-        ).on("dblclick.zoom", endOfEditMode);
+            .on("zoom", handlerZoom)
+        )
+        .on("dblclick.zoom", endOfEditMode);
 
 
     function endOfEditMode() {
-        console.log("asdasd", d3.event)
-        if (model.getModel('editMode')) {
-        const groupId = model.getModel('selectedId');
-            const target = d3.select('textarea')?.node();
-            const editedText = target?.value;
 
-            // 요소 삭제
-            d3.select(`#${groupId} foreignObject`).remove();
+        const nodeName = d3.event.target.nodeName;
 
-            // text 요소 다시 두둥 등장
-            d3.select(`#${groupId} text`)
-                .attr('visibility', '')
-                .text(editedText);
+        if (nodeName === 'text') {
+            return false;
         }
+
+        const groupId = model.getModel('selectedId');
+        const target = d3.select('textarea')?.node();
+        const editedText = target?.value;
+
+        // 요소 삭제
+        d3.select(`#${groupId} foreignObject`).remove();
+
+        // text 요소 다시 두둥 등장
+        d3.select(`#${groupId} text`)
+            .attr('visibility', '')
+            .text(editedText);
+    }
+
+    function applyTranslateAll() {
+        const translate = model.getModel('translate');
+
+        d3.selectAll('g')
+            .attr('transform', translate);
     }
 
 
@@ -128,9 +114,15 @@
             .attr('width', d => d.width)
             .attr('height', d => d.height)
             .call(d3.drag()
-                .on("start", function () {start(this)})
-                .on("drag", function () {drag(this)})
-                .on("end", function () {end(this)})
+                .on("start", function () {
+                    start(this)
+                })
+                .on("drag", function () {
+                    drag(this)
+                })
+                .on("end", function () {
+                    end(this)
+                })
             );
 
         svg.append('text')
@@ -142,12 +134,13 @@
             .attr('fill', "black")
             .text(d => d.text)
             .on('dblclick', function () {
-                console.log("???")
-                doubleClickEvent(this);
+                console.log("###### text dbclick")
+                handleTextDbclick(this, obj);
             })
 
-
         link.insertFirst(obj);
+
+        applyTranslateAll();
 
 
         function domList(dom) {
@@ -181,10 +174,7 @@
             moveTarget.forEach(tag => d3.select(tag).classed("active", false));
         }
 
-        function doubleClickEvent(dom) {
-
-            model.setModel('editMode', true);
-            model.setModel('selectedId', obj.id);
+        function handleTextDbclick(dom, obj) {
 
             d3.select(dom).attr('visibility', 'hidden');
 
@@ -210,10 +200,11 @@
                 })
                 .node()
                 .focus();
+
+            model.setModel('selectedId', obj.id)
         }
 
     }
-
 
 </script>
 </html>
